@@ -1,12 +1,11 @@
 package com.uber.api.payment.service.messaging.helper;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uber.api.common.api.constants.PaymentStatus;
 import com.uber.api.common.api.constants.TransactionStatus;
 import com.uber.api.common.api.constants.TransactionType;
 import com.uber.api.common.api.dto.CallTaxiEventPayload;
 import com.uber.api.kafka.model.*;
+import com.uber.api.kafka.producer.KafkaMessageHelper;
 import com.uber.api.outbox.OutboxStatus;
 import com.uber.api.payment.service.dto.CallEventPayload;
 import com.uber.api.payment.service.dto.CustomerOutboxMessage;
@@ -18,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -31,7 +29,8 @@ import static com.uber.api.outbox.SagaConst.CUSTOMER_PROCESSING_SAGA;
 @RequiredArgsConstructor
 public class PaymentMessagingDataMapper {
 
-    private final ObjectMapper objectMapper;
+    private final KafkaMessageHelper kafkaMessageHelper;
+
 
     public PaymentRequest paymentRequestAvroModelToPaymentRequest(PaymentRequestAvroModel paymentRequestAvroModel) {
         return PaymentRequest.builder()
@@ -81,32 +80,14 @@ public class PaymentMessagingDataMapper {
         return PaymentOutboxEntity.builder()
                 .id(UUID.randomUUID())
                 .sagaId(fromString)
-                .createdAt(callEventPayload.getCreatedAt())
+                .createdAt(callEventPayload.getCreatedAt().atZone(ZoneId.of("UTC")))
                 .processedAt(ZonedDateTime.now(ZoneId.of("UTC")))
                 .type(CUSTOMER_PROCESSING_SAGA)
-                .payload(createPayload(callEventPayload))
+                .payload(kafkaMessageHelper.createPayload(callEventPayload))
                 .paymentStatus(status)
                 .outboxStatus(started)
                 .build();
     }
-
-    private String createPayload(CallEventPayload callEventPayload) {
-        try {
-            return objectMapper.writeValueAsString(callEventPayload);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public  <T> T getEventOnPayload(String payload, Class<T> callEventPayloadClass) {
-        try {
-            return objectMapper.readValue(payload, callEventPayloadClass);
-        } catch (JsonProcessingException e) {
-            log.error("Could not read {} object!", callEventPayloadClass.getName(), e);
-            throw new RuntimeException("Could not read " + callEventPayloadClass.getName() + " object!", e);
-        }
-    }
-
 
     public PaymentResponseAvroModel callEventPayloadToPaymentResponseAvroModel(String sagaId,
                                                                                CallEventPayload payload) {
@@ -117,7 +98,7 @@ public class PaymentMessagingDataMapper {
                 .setCustomerMail(payload.getCustomerMail())
                 .setRequestId(payload.getRequestId())
                 .setPrice(payload.getPrice())
-                .setCreatedAt(Instant.from(payload.getCreatedAt()))
+                .setCreatedAt(payload.getCreatedAt().atZone(ZoneId.of("UTC")).toInstant())
                 .setPaymentStatus(com.uber.api.kafka.model.PaymentStatus.valueOf(payload.getPaymentStatus()))
                 .setFailureMessages(payload.getFailureMessages())
                 .build();

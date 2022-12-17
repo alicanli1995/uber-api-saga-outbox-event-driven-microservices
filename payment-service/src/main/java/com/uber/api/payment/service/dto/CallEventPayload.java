@@ -4,34 +4,36 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class CallEventPayload {
 
-    @JsonProperty
+    @JsonProperty("paymentId")
     private String paymentId;
 
-    @JsonProperty
+    @JsonProperty("customerMail")
     private String customerMail;
 
-    @JsonProperty
+    @JsonProperty("requestId")
     private String requestId;
 
-    @JsonProperty
+    @JsonProperty("price")
     private BigDecimal price;
 
-    @JsonProperty
+    @JsonProperty("paymentStatus")
     private String paymentStatus;
 
-    @JsonProperty
-    private ZonedDateTime createdAt;
+    @JsonProperty("createdAt")
+    private LocalDateTime createdAt;
 
-    @JsonProperty
+    @JsonProperty("failureMessages")
     private List<String> failureMessages;
 }

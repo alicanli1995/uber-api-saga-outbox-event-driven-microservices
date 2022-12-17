@@ -2,7 +2,7 @@ package com.uber.api.payment.service.messaging.service.impl;
 
 import com.uber.api.common.api.constants.CallStatus;
 import com.uber.api.common.api.constants.PaymentStatus;
-import com.uber.api.common.api.repository.PendingRequestRepository;
+import com.uber.api.common.api.entity.PendingRequest;
 import com.uber.api.outbox.OutboxStatus;
 import com.uber.api.payment.service.dto.PaymentRequest;
 import com.uber.api.payment.service.entity.Balance;
@@ -11,7 +11,6 @@ import com.uber.api.payment.service.messaging.kafka.publisher.PaymentResponseMes
 import com.uber.api.payment.service.messaging.service.PaymentRequestMessageListener;
 import com.uber.api.payment.service.messaging.service.PaymentService;
 import com.uber.api.payment.service.outbox.helper.PaymentOutboxHelper;
-import com.uber.api.payment.service.repository.BalanceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,9 +29,7 @@ public class PaymentRequestMessageListenerImpl implements PaymentRequestMessageL
 
     private final PaymentOutboxHelper paymentOutboxHelper;
     private final PaymentResponseMessagePublisher paymentResponseMessagePublisher;
-    private final BalanceRepository paymentRepository;
     private final PaymentService paymentService;
-    private final PendingRequestRepository pendingRequestRepository;
     private final PaymentDataMapper paymentDataMapper;
 
     @Override
@@ -88,16 +85,13 @@ public class PaymentRequestMessageListenerImpl implements PaymentRequestMessageL
 
     private void persistDbObject(Balance creditEntry, List<String> failureMessage, String requestId) {
         if (failureMessage.isEmpty()) {
-            paymentRepository.save(creditEntry);
+            paymentOutboxHelper.saveBalance(creditEntry);
         }
         else
         {
-            pendingRequestRepository.findByRequestId(UUID.fromString(requestId)).ifPresent(
-                    pendingRequest -> {
-                        pendingRequest.setCallStatus(CallStatus.PAYMENT_FAILED);
-                        pendingRequestRepository.save(pendingRequest);
-                    }
-            );
+            PendingRequest pendingRequest = paymentOutboxHelper.findByRequestId(UUID.fromString(requestId));
+            pendingRequest.setCallStatus(CallStatus.PAYMENT_FAILED);
+            paymentOutboxHelper.savePendingRequest(pendingRequest);
         }
     }
 

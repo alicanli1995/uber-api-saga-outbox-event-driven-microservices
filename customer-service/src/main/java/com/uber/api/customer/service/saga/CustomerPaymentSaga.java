@@ -56,9 +56,7 @@ public class CustomerPaymentSaga {
         SagaStatus sagaStatus = customerSagaHelper.customerStatusToSagaStatus
                 (customerPaidEvent.getPendingRequest().getCallStatus());
 
-        balanceOutboxRepository.save(getUpdatedPaymentOutboxMessage(balanceOutboxEntity,
-                sagaStatus,
-                CustomerStatus.WAITING));
+        balanceOutboxRepository.save(getUpdatedPaymentOutboxMessage(balanceOutboxEntity,sagaStatus));
 
         driverOutboxHelper.saveDriverOutboxMessage(customerMessagingDataMapper.
                         customerPaidEventToTaxiCallEventPayload(customerPaidEvent),
@@ -86,23 +84,21 @@ public class CustomerPaymentSaga {
         SagaStatus sagaStatus = customerSagaHelper.customerStatusToSagaStatus
                 (customer.getPendingRequest().getCallStatus());
 
-        customer = rollbackPaymentForTaxiCall(paymentResponse);
+        rollbackPaymentForTaxiCall(paymentResponse);
 
 
-        balanceOutboxRepository.save(getUpdatedPaymentOutboxMessage(balanceOutboxEntity,sagaStatus,
-                CustomerStatus.AVAILABLE));
+        balanceOutboxRepository.save(getUpdatedPaymentOutboxMessage(balanceOutboxEntity,sagaStatus));
 
         if (paymentResponse.getPaymentStatus().equals(PaymentStatus.CANCELED)){
             driverApprovalOutboxRepository.save(
                     getUpdatedApprovalOutboxMessage(paymentResponse.getSagaId(),
-                            customer.getCustomerStatus(),
                             sagaStatus));
         }
 
         log.info("Customer Payment saga rollback completed id {}", paymentResponse.getId());
     }
 
-    private DriverApprovalOutbox getUpdatedApprovalOutboxMessage(String sagaId, CustomerStatus customerStatus, SagaStatus sagaStatus) {
+    private DriverApprovalOutbox getUpdatedApprovalOutboxMessage(String sagaId, SagaStatus sagaStatus) {
         var orderApprovalOutboxMessageResponse = driverApprovalOutboxRepository.findByTypeAndSagaIdAndSagaStatus(
                 CUSTOMER_PROCESSING_SAGA, UUID.fromString(sagaId), SagaStatus.COMPENSATING);
 
@@ -117,15 +113,17 @@ public class CustomerPaymentSaga {
         return driverApprovalOutbox;
     }
 
-    private Customer rollbackPaymentForTaxiCall(PaymentResponse paymentResponse) {
-        var customer = customerRepository.findByEmail(paymentResponse.getCustomerMail()).get();
+    private void rollbackPaymentForTaxiCall(PaymentResponse paymentResponse) {
+        var customer = customerRepository.findByEmail(paymentResponse.getCustomerMail()).orElseThrow(
+                () -> new RuntimeException("Customer not found"));
         customer.setCustomerStatus(CustomerStatus.AVAILABLE);
         customer.setPendingRequest(null);
-        return customerRepository.save(customer);
+        customerRepository.save(customer);
     }
 
     private CustomerPaidEvent completePaymentForCustomer(PaymentResponse paymentResponse) {
-        Customer customer = customerRepository.findByEmail(paymentResponse.getCustomerMail()).get();
+        Customer customer = customerRepository.findByEmail(paymentResponse.getCustomerMail()).orElseThrow(
+                () -> new RuntimeException("Customer not found"));
         CustomerPaidEvent event = customerDomainService.payCustomer(customer, paymentResponse);
         customer.getPendingRequest().setCallStatus(CallStatus.DRIVER_WAITING);
         customerRepository.save(customer);
@@ -134,8 +132,7 @@ public class CustomerPaymentSaga {
 
 
     private BalanceOutboxEntity getUpdatedPaymentOutboxMessage(BalanceOutboxEntity balanceOutboxEntity,
-                                                               SagaStatus sagaStatus,
-                                                               CustomerStatus customerStatus) {
+                                                               SagaStatus sagaStatus) {
         balanceOutboxEntity.setSagaStatus(sagaStatus);
         balanceOutboxEntity.setProcessedAt(ZonedDateTime.now(ZoneId.of("UTC")));
         return balanceOutboxEntity;

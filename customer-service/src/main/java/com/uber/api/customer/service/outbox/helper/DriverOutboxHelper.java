@@ -1,12 +1,12 @@
 package com.uber.api.customer.service.outbox.helper;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uber.api.common.api.constants.CustomerStatus;
 import com.uber.api.common.api.dto.CallTaxiEventPayload;
 import com.uber.api.customer.service.entity.BalanceOutboxEntity;
 import com.uber.api.customer.service.entity.DriverApprovalOutbox;
 import com.uber.api.customer.service.repository.BalanceOutboxRepository;
 import com.uber.api.customer.service.repository.DriverApprovalOutboxRepository;
+import com.uber.api.kafka.producer.KafkaMessageHelper;
 import com.uber.api.outbox.OutboxStatus;
 import com.uber.api.saga.SagaStatus;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +23,7 @@ import static com.uber.api.outbox.SagaConst.CUSTOMER_PROCESSING_SAGA;
 @Service
 @RequiredArgsConstructor
 public class DriverOutboxHelper {
-
-    private final ObjectMapper objectMapper;
+    private final KafkaMessageHelper kafkaMessageHelper;
     private final DriverApprovalOutboxRepository driverApprovalOutboxRepository;
     private final BalanceOutboxRepository balanceOutboxRepository;
     public void saveDriverOutboxMessage(CallTaxiEventPayload customerPaidEventToTaxiCallEventPayload,
@@ -51,19 +50,11 @@ public class DriverOutboxHelper {
                 .sagaStatus(sagaStatus)
                 .createdAt(ZonedDateTime.now())
                 .type(CUSTOMER_PROCESSING_SAGA)
-                .payload(createPayload(customerPaidEventToTaxiCallEventPayload))
+                .payload(kafkaMessageHelper.createPayload(customerPaidEventToTaxiCallEventPayload))
                 .build();
 
     }
 
-    public String createPayload(Object o) {
-        try {
-            return objectMapper.writeValueAsString(o);
-        } catch (Exception e) {
-            log.error("Error while creating payload for customer outbox message", e);
-            throw new RuntimeException("Error while creating payload for customer outbox message", e);
-        }
-    }
 
 
 

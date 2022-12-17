@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface CallDriverRequestService {
     void approveCallRequest(DriverCallRequestDTO driverCallRequestAvroModelToCallDriverDTO);
-    List<DriverListDTO> getDriver(String ipAddress, Double latitude, Double longitude, Double valueOf, String name);
+    List<DriverListDTO> getDriver(String ipAddress, Double valueOf, String name);
 
     void acceptCustomerCallRequest(String requestId);
 

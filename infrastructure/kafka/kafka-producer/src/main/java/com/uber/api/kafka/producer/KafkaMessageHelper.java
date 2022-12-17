@@ -55,4 +55,15 @@ public class KafkaMessageHelper {
             throw new UberDomainException("Could not read " + outputType.getName() + " object!", e);
         }
     }
+
+    public  String createPayload(Object o) {
+        try {
+            return objectMapper.writeValueAsString(o);
+        } catch (Exception e) {
+            log.error("Error while creating payload for customer outbox message", e);
+            throw new RuntimeException("Error while creating payload for customer outbox message", e);
+        }
+    }
+
+
 }

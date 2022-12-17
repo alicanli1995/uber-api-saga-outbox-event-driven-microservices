@@ -3,15 +3,15 @@ package com.uber.api.payment.service.event;
 import com.uber.api.common.api.event.UberDomainEvent;
 import com.uber.api.payment.service.dto.Payment;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public abstract class PaymentEvent implements UberDomainEvent<Payment> {
     private final Payment payment;
-    private final ZonedDateTime createdAt;
+    private final LocalDateTime createdAt;
     private final List<String> failureMessages;
 
-    public PaymentEvent(Payment payment, ZonedDateTime createdAt, List<String> failureMessages) {
+    public PaymentEvent(Payment payment, LocalDateTime createdAt, List<String> failureMessages) {
         this.payment = payment;
         this.createdAt = createdAt;
         this.failureMessages = failureMessages;
@@ -21,7 +21,7 @@ public abstract class PaymentEvent implements UberDomainEvent<Payment> {
         return payment;
     }
 
-    public ZonedDateTime getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 

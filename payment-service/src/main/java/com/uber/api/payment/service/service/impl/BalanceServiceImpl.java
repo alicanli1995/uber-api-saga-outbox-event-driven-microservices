@@ -1,5 +1,6 @@
 package com.uber.api.payment.service.service.impl;
 
+import com.uber.api.payment.service.exception.PaymentNotFoundException;
 import com.uber.api.payment.service.repository.BalanceRepository;
 import com.uber.api.payment.service.service.BalanceService;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ public class BalanceServiceImpl implements BalanceService {
     @Override
     public BigDecimal getBalance(String mail) {
         return balanceRepository.findByMail(mail).orElseThrow(
-                () -> new RuntimeException("Balance not found for mail: " + mail)
+                () -> new PaymentNotFoundException("Balance not found for mail: " + mail)
         ).getTotalCreditAmount();
     }
 }

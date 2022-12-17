@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -34,13 +35,13 @@ public class PaymentServiceImpl implements PaymentService {
             log.info("Payment is valid and initialized");
             payment.setStatus(PaymentStatus.COMPLETED);
             subtractCreditEntry(payment,balance);
-            addPaymentToBalanceHistory(balance,payment, TransactionType.DEBIT);
-            return new PaymentCompletedEvent(payment, ZonedDateTime.now(ZoneId.of("UTC")));
+            addPaymentToBalanceHistory(balance,payment);
+            return new PaymentCompletedEvent(payment, LocalDateTime.now(ZoneId.of("UTC")));
         }
         else {
             log.info("Payment is invalid and not initialized");
             payment.setStatus(PaymentStatus.FAILED);
-            return new PaymentFailedEvent(payment, ZonedDateTime.now(ZoneId.of("UTC")), failureMessage);
+            return new PaymentFailedEvent(payment, LocalDateTime.now(ZoneId.of("UTC")), failureMessage);
         }
 
     }
@@ -49,17 +50,17 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentEvent validateAndCancelPayment(Payment payment, Balance creditEntry, List<String> failureMessage) {
         payment.validatePayment(failureMessage);
         addCreditEntry(payment,creditEntry);
-        addPaymentToBalanceHistory(creditEntry,payment, TransactionType.CREDIT);
+        addPaymentToBalanceHistory(creditEntry,payment);
 
         if (failureMessage.isEmpty()) {
             log.info("Payment is valid and cancelled");
             payment.setStatus(PaymentStatus.CANCELED);
-            return new PaymentCompletedEvent(payment, ZonedDateTime.now(ZoneId.of("UTC")));
+            return new PaymentCompletedEvent(payment, LocalDateTime.now(ZoneId.of("UTC")));
         }
         else {
             log.info("Payment is invalid and not cancelled");
             payment.setStatus(PaymentStatus.FAILED);
-            return new PaymentFailedEvent(payment, ZonedDateTime.now(ZoneId.of("UTC")), failureMessage);
+            return new PaymentFailedEvent(payment, LocalDateTime.now(ZoneId.of("UTC")), failureMessage);
         }
     }
 
@@ -68,13 +69,13 @@ public class PaymentServiceImpl implements PaymentService {
         creditEntry.setTotalCreditAmount(newBalance);
     }
 
-    private void addPaymentToBalanceHistory(Balance balance, Payment payment,TransactionType transactionType) {
+    private void addPaymentToBalanceHistory(Balance balance, Payment payment) {
         var newBalanceHistory = BalanceHistory.builder()
                 .balance(balance)
                 .email(payment.getCustomerMail())
                 .transactionAmount(payment.getPrice())
                 .transactionStatus(TransactionStatus.ACCEPTED)
-                .transactionType(transactionType)
+                .transactionType(TransactionType.DEBIT)
                 .transactionDate(ZonedDateTime.now(ZoneId.of("UTC")))
                 .build();
 

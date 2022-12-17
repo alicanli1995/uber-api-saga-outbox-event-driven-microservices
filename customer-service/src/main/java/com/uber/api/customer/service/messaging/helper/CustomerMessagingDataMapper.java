@@ -102,16 +102,17 @@ public class CustomerMessagingDataMapper {
     }
 
     public CallTaxiEventPayload createCallTaxiEventPayload(PaymentResponseAvroModel paymentResponseAvroModel) {
-        var pendingRequest = pendingRequestRepository.findByRequestId(UUID.fromString(paymentResponseAvroModel.getRequestId()));
+        var pendingRequest = pendingRequestRepository.findByRequestId(UUID.fromString(paymentResponseAvroModel.getRequestId())).orElseThrow(
+                () -> new RuntimeException("No pending request found for request id: " + paymentResponseAvroModel.getRequestId()));
         return CallTaxiEventPayload.builder()
-                .requestId(pendingRequest.get().getRequestId())
+                .requestId(pendingRequest.getRequestId())
                 .customerEmail(paymentResponseAvroModel.getCustomerMail())
-                .driverEmail(pendingRequest.get().getDriverEmail())
-                .distance(pendingRequest.get().getCustomerLocation().getDistance())
-                .customerDestination(pendingRequest.get().getCustomerDestination())
-                .customerLocation(pendingRequest.get().getCustomerLocation())
+                .driverEmail(pendingRequest.getDriverEmail())
+                .distance(pendingRequest.getCustomerLocation().getDistance())
+                .customerDestination(pendingRequest.getCustomerDestination())
+                .customerLocation(pendingRequest.getCustomerLocation())
                 .price(paymentResponseAvroModel.getPrice().doubleValue())
-                .isSpecialOffer(pendingRequest.get().getIsSpecialOffer())
+                .isSpecialOffer(pendingRequest.getIsSpecialOffer())
                 .build();
     }
 }

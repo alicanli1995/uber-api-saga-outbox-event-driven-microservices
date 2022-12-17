@@ -3,6 +3,7 @@ package com.uber.api.payment.service.messaging.kafka.listener;
 import com.uber.api.kafka.consumer.KafkaConsumer;
 import com.uber.api.kafka.model.PaymentCustomerStatus;
 import com.uber.api.kafka.model.PaymentRequestAvroModel;
+import com.uber.api.payment.service.exception.KakfaDataAccessException;
 import com.uber.api.payment.service.messaging.helper.PaymentMessagingDataMapper;
 import com.uber.api.payment.service.messaging.service.PaymentRequestMessageListener;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +63,7 @@ public class PaymentRequestKafkaListener implements KafkaConsumer<PaymentRequest
                                     "in PaymentRequestKafkaListener for request id: {}",
                             sqlException.getSQLState(), paymentRequestAvroModel.getRequestId());
                 } else {
-                    throw new RuntimeException("Throwing DataAccessException in" +
+                    throw new KakfaDataAccessException("Throwing DataAccessException in" +
                             " PaymentRequestKafkaListener: " + e.getMessage(), e);
                 }
             }

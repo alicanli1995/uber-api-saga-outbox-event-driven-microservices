@@ -1,7 +1,5 @@
 package com.uber.api.customer.service.outbox.helper;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uber.api.common.api.constants.CallStatus;
 import com.uber.api.common.api.dto.CallTaxiEventPayload;
 import com.uber.api.common.api.repository.PendingRequestRepository;
@@ -31,23 +29,20 @@ import static com.uber.api.outbox.SagaConst.CUSTOMER_PROCESSING_SAGA;
 @RequiredArgsConstructor
 public class RequestOutboxHelper {
     private final BalanceOutboxRepository balanceOutboxRepository;
-    private final ObjectMapper objectMapper;
     private final PaymentOutboxDataHelper paymentOutboxDataHelper;
     private final DriverApprovalOutboxRepository driverApprovalOutboxRepository;
     private final PendingRequestRepository pendingRequestRepository;
     private final KafkaMessageHelper kafkaMessageHelper;
 
     public UUID savePaymentOutboxMessage(Object payload,
-                                         String customerStatus,
                                          String sagaStatus,
-                                         String outboxStatus,
-                                         UUID uuid) throws JsonProcessingException {
+                                         UUID sagaId) {
         var paymentOutbox = BalanceOutboxEntity.builder()
                 .id(UUID.randomUUID())
-                .sagaId(uuid)
+                .sagaId(sagaId)
                 .createdAt(ZonedDateTime.now())
-                .payload(objectMapper.writeValueAsString(payload))
-                .outboxStatus(OutboxStatus.valueOf(outboxStatus))
+                .payload(kafkaMessageHelper.createPayload(payload))
+                .outboxStatus(OutboxStatus.STARTED)
                 .sagaStatus(SagaStatus.valueOf(sagaStatus))
                 .type(CUSTOMER_PROCESSING_SAGA)
                 .build();

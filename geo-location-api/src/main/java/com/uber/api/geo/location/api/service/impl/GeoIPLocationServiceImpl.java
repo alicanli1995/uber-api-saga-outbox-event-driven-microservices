@@ -33,8 +33,6 @@ public class GeoIPLocationServiceImpl implements GeoIPLocationService {
     private final DatabaseReader databaseReader;
     private static final String UNKNOWN = "UNKNOWN";
 
-    private static final BigDecimal DEFAULT_RATE = new BigDecimal(10L);
-
     @Override
     public GeoIP getIpLocation(String ip)  {
 

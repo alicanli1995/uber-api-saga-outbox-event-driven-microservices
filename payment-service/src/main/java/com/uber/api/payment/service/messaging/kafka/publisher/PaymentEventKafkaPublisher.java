@@ -26,7 +26,7 @@ public class PaymentEventKafkaPublisher implements PaymentResponseMessagePublish
     private final PaymentMessagingDataMapper paymentMessagingDataMapper;
     @Override
     public void publish(CustomerOutboxMessage message, BiConsumer<CustomerOutboxMessage, OutboxStatus> updateOutboxMessage) {
-        CallEventPayload payload = paymentMessagingDataMapper.getEventOnPayload(message.getPayload(), CallEventPayload.class);
+        CallEventPayload payload = kafkaMessageHelper.getEventOnPayload(message.getPayload(), CallEventPayload.class);
         var sagaId = message.getSagaId().toString();
 
         log.info("Publishing payment response for saga id: {}", sagaId);

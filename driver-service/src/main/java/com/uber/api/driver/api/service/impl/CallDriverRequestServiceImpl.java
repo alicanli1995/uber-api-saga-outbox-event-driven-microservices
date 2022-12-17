@@ -3,11 +3,13 @@ package com.uber.api.driver.api.service.impl;
 import com.uber.api.common.api.constants.CallStatus;
 import com.uber.api.common.api.constants.DriverStatus;
 import com.uber.api.common.api.entity.PendingRequest;
+import com.uber.api.driver.api.client.LocationApi;
 import com.uber.api.driver.api.dto.*;
 import com.uber.api.driver.api.entity.Driver;
 import com.uber.api.driver.api.event.CallRequestApprovalEvent;
+import com.uber.api.driver.api.exception.DriverHasNotCallException;
+import com.uber.api.driver.api.exception.DriverNotFoundException;
 import com.uber.api.driver.api.helper.DriverApiHelper;
-import com.uber.api.driver.api.messaging.kafka.publisher.UserCreatedMessagePublisher;
 import com.uber.api.driver.api.outbox.helper.DriverRequestOutboxHelper;
 import com.uber.api.driver.api.repository.DriverRepository;
 import com.uber.api.driver.api.service.CallDriverRequestService;
@@ -30,8 +32,7 @@ public class CallDriverRequestServiceImpl implements CallDriverRequestService {
     private final DriverRepository driverRepository;
     private final DriverRequestOutboxHelper driverOutboxHelper;
     private final DriverApiHelper driverApiHelper;
-
-    private final UserCreatedMessagePublisher userCreatedMessagePublisher;
+    private final LocationApi locationApi;
 
     @Override
     public void approveCallRequest(DriverCallRequestDTO driverCallRequestAvroModelToCallDriverDTO) {
@@ -55,27 +56,29 @@ public class CallDriverRequestServiceImpl implements CallDriverRequestService {
     }
 
     @Override
-    public List<DriverListDTO> getDriver(String ipAddress, Double latitude, Double longitude, Double distance, String name) {
+    public List<DriverListDTO> getDriver(String ipAddress, Double distance, String name) {
+        GeoIP ipLocation = locationApi.getIpLocation(ipAddress);
+
         var driverByIpAddress = new ArrayList<>(driverApiHelper.findAllByIpAddress(ipAddress)
                 .stream()
                 .filter(driver -> driver.getDriverStatus().equals(DriverStatus.AVAILABLE))
                 .peek(driver -> driver.setPrice(BigDecimal.valueOf(distance * DRIVER_DEFAULT_PER_KM_PRICE)))
                 .toList());
         if(driverByIpAddress.isEmpty()){
-            var nearList =  driverApiHelper.nearDriverList(latitude, longitude,distance).stream()
+            var nearList =  driverApiHelper.nearDriverList(ipLocation.getLatitude(), ipLocation.getLongitude(),distance).stream()
                     .filter(driver -> driver.getDriverStatus().equals(DriverStatus.AVAILABLE))
                     .toList();
             if (nearList.isEmpty()) {
                 return driverApiHelper.generateDummyDriverList(GeoIP.builder()
                         .ipAddress(ipAddress)
-                        .latitude(latitude)
-                        .longitude(longitude)
+                        .latitude(ipLocation.getLatitude())
+                        .longitude(ipLocation.getLongitude())
                         .build(),
                         distance);
             }
             return nearList;
         }
-        driverByIpAddress.addAll(driverApiHelper.nearDriverList(latitude, longitude,distance)
+        driverByIpAddress.addAll(driverApiHelper.nearDriverList(ipLocation.getLatitude(), ipLocation.getLongitude(),distance)
                 .stream()
                 .filter(driver -> driver.getDriverStatus().equals(DriverStatus.AVAILABLE) && !driverByIpAddress.contains(driver))
                 .toList());
@@ -86,21 +89,20 @@ public class CallDriverRequestServiceImpl implements CallDriverRequestService {
     @Override
     public void acceptCustomerCallRequest(String requestId) {
         var driver = driverRepository.findByPendingRequest(PendingRequest.builder().requestId(UUID.fromString(requestId)).build())
-                .orElseThrow(() -> new RuntimeException("Driver not found for request id: " + requestId));
+                .orElseThrow(() -> new DriverNotFoundException("Driver not found for request id: " + requestId));
         if (driver.getDriverStatus().equals(DriverStatus.CALL)) {
             driver.getPendingRequest().setCallStatus(CallStatus.ACCEPTED);
             driver.setDriverStatus(DriverStatus.UNAVAILABLE);
             driverRepository.save(driver);
         }
         else {
-            throw new RuntimeException("Driver not in call status for request id: " + requestId);
+            throw new DriverHasNotCallException("Driver not in call status for request id: " + requestId);
         }
     }
 
     @Override
     public DriverStatusDTO getDriverStatus(String mail) {
-        var driver = driverRepository.findByEmail(mail)
-                .orElseThrow(() -> new RuntimeException("Driver not found for mail: " + mail));
+        Driver driver = getDriver(mail);
         if (driver.getDriverStatus().equals(DriverStatus.CALL) ||
                 driver.getDriverStatus().equals(DriverStatus.UNAVAILABLE)) {
             return DriverStatusDTO.builder()
@@ -122,6 +124,11 @@ public class CallDriverRequestServiceImpl implements CallDriverRequestService {
                 .build();
     }
 
+    private Driver getDriver(String mail) {
+        return driverRepository.findByEmail(mail)
+                .orElseThrow(() -> new DriverNotFoundException("Driver not found for mail: " + mail));
+    }
+
     @Override
     public DriverListDTO getDriverByMail(String mail) {
         return driverApiHelper.getDriverDTO(driverRepository.findByEmail(mail)
@@ -131,21 +138,20 @@ public class CallDriverRequestServiceImpl implements CallDriverRequestService {
     @Override
     public void rejectCustomerCallRequest(String requestId) {
         var driver = driverRepository.findByPendingRequest(PendingRequest.builder().requestId(UUID.fromString(requestId)).build())
-                .orElseThrow(() -> new RuntimeException("Driver not found for request id: " + requestId));
+                .orElseThrow(() -> new DriverNotFoundException("Driver not found for request id: " + requestId));
         if (driver.getDriverStatus().equals(DriverStatus.CALL)) {
             driver.getPendingRequest().setCallStatus(CallStatus.DRIVER_REJECTED);
             driver.setDriverStatus(DriverStatus.AVAILABLE);
             driverRepository.save(driver);
         }
         else {
-            throw new RuntimeException("Driver not in call status for request id: " + requestId);
+            throw new DriverHasNotCallException("Driver not in call status for request id: " + requestId);
         }
     }
 
     @Override
     public void processCompleted(DriverCallRequestDTO driverCallRequestAvroModelToCallDriverDTO) {
-        var driver = driverRepository.findByEmail(driverCallRequestAvroModelToCallDriverDTO.getDriverEmail())
-                .orElseThrow(() -> new RuntimeException("Driver not found for mail: " + driverCallRequestAvroModelToCallDriverDTO.getDriverEmail()));
+        var driver = getDriver(driverCallRequestAvroModelToCallDriverDTO.getDriverEmail());
         driver.setDriverStatus(DriverStatus.AVAILABLE);
         driver.setPendingRequest(null);
         driverRepository.save(driver);

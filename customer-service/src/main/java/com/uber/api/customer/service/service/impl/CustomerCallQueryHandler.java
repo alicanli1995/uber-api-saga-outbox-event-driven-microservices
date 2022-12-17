@@ -22,7 +22,6 @@ public class CustomerCallQueryHandler {
     private final CustomerRepository customerRepository;
     private final DriverApiClient driverApiClient;
     private final LocationApi locationApi;
-
     private final UserCreatedMessagePublisher userCreatedMessagePublisher;
 
 

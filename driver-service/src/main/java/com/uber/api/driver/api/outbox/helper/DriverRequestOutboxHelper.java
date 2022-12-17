@@ -1,6 +1,5 @@
 package com.uber.api.driver.api.outbox.helper;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uber.api.common.api.constants.CallStatus;
 import com.uber.api.common.api.repository.PendingRequestRepository;
 import com.uber.api.driver.api.dto.CallApprovedEventPayload;
@@ -28,7 +27,6 @@ import static com.uber.api.outbox.SagaConst.CUSTOMER_PROCESSING_SAGA;
 @RequiredArgsConstructor
 public class DriverRequestOutboxHelper {
 
-    private final ObjectMapper objectMapper;
     private final KafkaMessageHelper kafkaMessageHelper;
     private final CustomerRequestOutboxEntityRepository customerRequestOutboxEntityRepository;
     private final PendingRequestRepository pendingRequestRepository;
@@ -44,20 +42,11 @@ public class DriverRequestOutboxHelper {
                         .outboxStatus(OutboxStatus.STARTED)
                         .createdAt(driverCallRequestAvroModelToCallDriverDTO.getCreatedAt())
                         .processedAt(ZonedDateTime.now(ZoneId.of("UTC")))
-                        .payload(createPayload(callRequestApprovalEvent))
+                        .payload(kafkaMessageHelper.createPayload(getPayload(callRequestApprovalEvent)))
                 .build());
 
         log.info("Driver call request outbox message saved for request id: {}", driverCallRequestAvroModelToCallDriverDTO.getRequestId());
 
-    }
-
-    private String createPayload(CallRequestApprovalEvent callRequestApprovalEvent) {
-        try {
-            return objectMapper.writeValueAsString(getPayload(callRequestApprovalEvent));
-        } catch (Exception e) {
-            log.error("Error while creating payload for outbox message", e);
-            return null;
-        }
     }
 
     private CallApprovedEventPayload getPayload(CallRequestApprovalEvent callRequestApprovalEvent) {

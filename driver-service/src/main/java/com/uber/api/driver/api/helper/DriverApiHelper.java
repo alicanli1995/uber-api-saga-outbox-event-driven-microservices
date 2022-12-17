@@ -4,6 +4,7 @@ import com.github.javafaker.Faker;
 import com.uber.api.common.api.constants.DriverStatus;
 import com.uber.api.common.api.entity.Location;
 import com.uber.api.common.api.entity.PendingRequest;
+import com.uber.api.common.api.exception.PendingRequestNotFoundException;
 import com.uber.api.common.api.repository.PendingRequestRepository;
 import com.uber.api.driver.api.client.LocationApi;
 import com.uber.api.driver.api.dto.CallApprovedEventPayload;
@@ -14,6 +15,7 @@ import com.uber.api.driver.api.entity.CustomerRequestOutboxEntity;
 import com.uber.api.driver.api.entity.Driver;
 import com.uber.api.driver.api.event.CallApprovedEvent;
 import com.uber.api.driver.api.event.CallRequestApprovalEvent;
+import com.uber.api.driver.api.exception.DriverNotFoundException;
 import com.uber.api.driver.api.messaging.kafka.publisher.UserCreatedMessagePublisher;
 import com.uber.api.driver.api.repository.CustomerRequestOutboxEntityRepository;
 import com.uber.api.driver.api.repository.DriverRepository;
@@ -45,20 +47,14 @@ public class DriverApiHelper {
     private final LocationApi geoIPLocationService;
     private final CustomerRequestOutboxEntityRepository customerRequestOutboxEntityRepository;
     private final PendingRequestRepository pendingRequestRepository;
-
     private final UserCreatedMessagePublisher userCreatedMessagePublisher;
 
     public Driver findDriver(DriverCallRequestDTO driverCallRequestAvroModelToCallDriverDTO) {
         var pending = pendingRequestRepository
-                .findByRequestId(UUID.fromString(driverCallRequestAvroModelToCallDriverDTO.getRequestId()));
-        if (pending.isEmpty()) {
-            throw new RuntimeException("No pending request found for request id: " + driverCallRequestAvroModelToCallDriverDTO.getRequestId());
-        }
-        var driver = driverRepository.findByEmail(pending.get().getDriverEmail());
-        if (driver.isEmpty()) {
-            throw new RuntimeException("No driver found for email: " + pending.get().getDriverEmail());
-        }
-        return driver.get();
+                .findByRequestId(UUID.fromString(driverCallRequestAvroModelToCallDriverDTO.getRequestId())).orElseThrow(
+                        () -> new PendingRequestNotFoundException("Pending request not found for request id: " + driverCallRequestAvroModelToCallDriverDTO.getRequestId()));
+        return driverRepository.findByEmail(pending.getDriverEmail()).orElseThrow(
+                () -> new DriverNotFoundException("Driver not found for email: " + pending.getDriverEmail()));
     }
 
     public boolean publishIfOutboxMessageProcessed(DriverCallRequestDTO driverCallRequestAvroModelToCallDriverDTO) {
@@ -66,14 +62,7 @@ public class DriverApiHelper {
                 CUSTOMER_PROCESSING_SAGA,
                 UUID.fromString(driverCallRequestAvroModelToCallDriverDTO.getSagaId()),
                 OutboxStatus.COMPLETED);
-
-        if (byTypeAndSagaIdAndOutboxStatus.isPresent()) {
-            log.info("Outbox message for request id: {} is processed, publishing driver call request", driverCallRequestAvroModelToCallDriverDTO.getRequestId());
-            return true;
-        }
-        log.info("Outbox message for request id: {} is not processed, not publishing driver call request", driverCallRequestAvroModelToCallDriverDTO.getRequestId());
-        return false;
-
+        return byTypeAndSagaIdAndOutboxStatus.isPresent();
     }
 
 
@@ -167,14 +156,10 @@ public class DriverApiHelper {
 
     }
 
-    public void setLocation(DriverListDTO driver, Double latitude, Double longitude, Double distance) {
-        driver.getLocations().setDistance(geoIPLocationService.getDistance
-                (latitude, longitude, driver.getLocations().getLatitude(), driver.getLocations().getLongitude(),distance));
-    }
-
     public void setDriverPendingRequest(DriverCallRequestDTO driverCallRequestAvroModelToCallDriverDTO, Driver driver) {
         driver.setPendingRequest(pendingRequestRepository
-                .findByRequestId(UUID.fromString(driverCallRequestAvroModelToCallDriverDTO.getRequestId())).get());
+                .findByRequestId(UUID.fromString(driverCallRequestAvroModelToCallDriverDTO.getRequestId())).orElseThrow(
+                        () -> new PendingRequestNotFoundException("No pending request found for request id: " + driverCallRequestAvroModelToCallDriverDTO.getRequestId())));
     }
 
     public Driver updateStatus(Driver driver) {
@@ -182,14 +167,14 @@ public class DriverApiHelper {
         return driver;
     }
 
-    public CallRequestApprovalEvent validateCallRequest(DriverCallRequestDTO driverCallRequestAvroModelToCallDriverDTO,
+    public CallRequestApprovalEvent validateCallRequest(DriverCallRequestDTO callRequestDTO,
                                                         Driver driver,
                                                         List<String> failureMessages) {
         if (!driver.getDriverStatus().equals(DriverStatus.AVAILABLE)) {
             failureMessages.add("Driver is not available");
         }
         if (failureMessages.isEmpty()) {
-            pendingRequestRepository.findByRequestId(UUID.fromString(driverCallRequestAvroModelToCallDriverDTO.getRequestId()))
+            pendingRequestRepository.findByRequestId(UUID.fromString(callRequestDTO.getRequestId()))
                     .ifPresent(driver::setPendingRequest);
             return new CallApprovedEvent(driver);
         }
@@ -221,8 +206,8 @@ public class DriverApiHelper {
     }
 
     private String getPendingRequestId(CallApprovedEventPayload orderEventPayload) {
-        return driverRepository.findByEmail(orderEventPayload.getDriverEmail())
-                .get()
+        return driverRepository.findByEmail(orderEventPayload.getDriverEmail()).orElseThrow(
+                () -> new DriverNotFoundException("No driver found for email: " + orderEventPayload.getDriverEmail()))
                 .getPendingRequest()
                 .getRequestId()
                 .toString();

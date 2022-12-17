@@ -12,6 +12,7 @@ import com.uber.api.customer.service.repository.BalanceOutboxRepository;
 import com.uber.api.customer.service.repository.CustomerRepository;
 import com.uber.api.customer.service.repository.DriverApprovalOutboxRepository;
 import com.uber.api.customer.service.saga.helper.CustomerSagaHelper;
+import com.uber.api.kafka.producer.KafkaMessageHelper;
 import com.uber.api.outbox.OutboxStatus;
 import com.uber.api.saga.SagaStatus;
 import lombok.RequiredArgsConstructor;
@@ -29,10 +30,9 @@ import static com.uber.api.outbox.SagaConst.CUSTOMER_PROCESSING_SAGA;
 @Component
 @RequiredArgsConstructor
 public class DriverSaga {
-
     private final DriverApprovalOutboxRepository driverApprovalOutboxRepository;
     private final CallDataMapper callDataMapper;
-
+    private final KafkaMessageHelper kafkaMessageHelper;
     private final BalanceOutboxRepository balanceOutboxRepository;
     private final CustomerRepository customerRepository;
     private final DriverOutboxHelper driverOutboxHelper;
@@ -85,7 +85,7 @@ public class DriverSaga {
                                                          UUID sagaId) {
         balanceOutboxRepository.findBySagaId(sagaId).ifPresent(balanceOutboxEntity -> {
             balanceOutboxEntity.setSagaStatus(sagaStatus);
-            balanceOutboxEntity.setPayload(driverOutboxHelper.createPayload(payload));
+            balanceOutboxEntity.setPayload(kafkaMessageHelper.createPayload(payload));
             balanceOutboxEntity.setProcessedAt(ZonedDateTime.now(ZoneId.of("UTC")));
             balanceOutboxEntity.setOutboxStatus(OutboxStatus.STARTED);
             balanceOutboxRepository.save(balanceOutboxEntity);
@@ -103,10 +103,8 @@ public class DriverSaga {
 
     private PendingRequest updateCustomerStatus(DriverCallResponse callResponse, CustomerStatus customerStatus) {
         var customer = customerRepository.findByPendingRequest(
-                PendingRequest.builder().requestId(UUID.fromString(callResponse.getPendingRequestId())).build()
-        ).orElseThrow(
-                () -> new RuntimeException("Customer not found for pending request id: " + callResponse.getPendingRequestId())
-        );
+                PendingRequest.builder().requestId(UUID.fromString(callResponse.getPendingRequestId())).build()).orElseThrow(
+                        () -> new RuntimeException("Customer not found for pending request id: " + callResponse.getPendingRequestId()));
         customer.setCustomerStatus(customerStatus);
         customerRepository.save(customer);
         return customer.getPendingRequest();
