@@ -1,0 +1,32 @@
+version: '3.7'
+services:
+  init-kafka:
+    image: confluentinc/cp-kafka:${KAFKA_VERSION}
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # block until kafka is reachable
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --list
+
+      echo -e 'Deleting kafka topics'
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --topic payment-request-value --delete --if-exists
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --topic payment-response-value --delete --if-exists
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --topic driver-call-request-value --delete --if-exists
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --topic driver-call-response-value --delete --if-exists
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --topic process-complete-value --delete --if-exists
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --topic driver-create-value --delete --if-exists
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --create --if-not-exists --topic payment-request-value --replication-factor 3 --partitions 3
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --create --if-not-exists --topic payment-response-value --replication-factor 3 --partitions 3
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --create --if-not-exists --topic driver-call-request-value --replication-factor 3 --partitions 3
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --create --if-not-exists --topic driver-call-response-value --replication-factor 3 --partitions 3
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --create --if-not-exists --topic process-complete-value --replication-factor 3 --partitions 3
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --create --if-not-exists --topic driver-create-value --replication-factor 3 --partitions 3
+
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server kafka-broker-1:9092 --list
+      "
+    networks:
+      - ${GLOBAL_NETWORK:-kafka}

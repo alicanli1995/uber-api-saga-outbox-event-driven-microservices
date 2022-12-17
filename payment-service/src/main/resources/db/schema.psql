@@ -1,0 +1,45 @@
+create table if not exists payment.balance
+(
+    id                  uuid not null,
+    customer_mail       varchar(255),
+    total_credit_amount numeric(19, 2),
+    primary key (id)
+);
+
+alter table payment.balance
+    owner to postgres;
+
+create table if not exists payment.balance_history
+(
+    id                 uuid not null,
+    email              varchar(255),
+    transaction_amount numeric(19, 2),
+    transaction_date   timestamp,
+    transaction_status varchar(255),
+    transaction_type   varchar(255),
+    balance_id         uuid,
+    primary key (id),
+    constraint fkh7q28d940m7fkjxasp9fx4cdn
+        foreign key (balance_id) references payment.balance
+);
+
+alter table payment.balance_history
+    owner to postgres;
+
+create table if not exists payment.payment_outbox
+(
+    id             uuid    not null,
+    created_at     timestamp,
+    outbox_status  varchar(255),
+    payload        varchar(2500),
+    payment_status varchar(255),
+    processed_at   timestamp,
+    saga_id        uuid,
+    type           varchar(255),
+    version        integer not null,
+    primary key (id)
+);
+
+alter table payment.payment_outbox
+    owner to postgres;
+

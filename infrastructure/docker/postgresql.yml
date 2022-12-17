@@ -1,0 +1,24 @@
+version: '3.7'
+services:
+  postgres-db:
+      image: postgres:12.2
+      hostname: postgres
+      ports:
+        - "5432:5432"
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: postgres
+        PGDATA: /var/lib/postgresql/data/mnt
+      volumes:
+        - pgdata:/var/lib/postgresql/data
+        - pgconf:/etc/postgresql
+        - pglog:/var/log/postgresql
+
+volumes:
+  pgdata:
+    driver: local
+  pgconf:
+    driver: local
+  pglog:
+    driver: local

@@ -1,0 +1,110 @@
+server:
+  port: 4768
+
+driver-service:
+  driver-call-request-topic-name: driver-call-request-value
+  driver-call-response-topic-name: driver-call-response-value
+  driver-create-topic-name: user-create-value
+  process-completed-topic-name: process-complete-value
+  outbox-scheduler-fixed-rate: 10000
+  outbox-scheduler-initial-delay: 10000
+
+spring:
+  banner:
+    location: classpath:banner.txt
+  application:
+    name: driver-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/uber-services
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=driver&binaryTransfer=true&reWriteBatchedInserts=true&stringtype=unspecified
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  main:
+    allow-circular-references: true
+  sql:
+    init:
+#      schema-locations: classpath:db/schema.sql
+      mode: always
+
+kafka-config:
+  bootstrap-servers: localhost:19092, localhost:29092, localhost:39092
+  schema-registry-url-key: schema.registry.url
+  schema-registry-url: http://localhost:8081
+  num-of-partitions: 3
+  replication-factor: 3
+
+kafka-producer-config:
+  key-serializer-class: org.apache.kafka.common.serialization.StringSerializer
+  value-serializer-class: io.confluent.kafka.serializers.KafkaAvroSerializer
+  compression-type: snappy
+  acks: all
+  batch-size: 16384
+  batch-size-boost-factor: 100
+  linger-ms: 5
+  request-timeout-ms: 60000
+  retry-count: 5
+
+kafka-consumer-config:
+  key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+  driver-call-consumer-group-id: driver-call-topic-consumer
+  process-completed-consumer-group-id: process-completed-topic-consumer
+  auto-offset-reset: earliest
+  specific-avro-reader-key: specific.avro.reader
+  specific-avro-reader: true
+  batch-listener: true
+  auto-startup: true
+  concurrency-level: 3
+  session-timeout-ms: 10000
+  heartbeat-interval-ms: 3000
+  max-poll-interval-ms: 300000
+  max-poll-records: 500
+  max-partition-fetch-bytes-default: 1048576
+  max-partition-fetch-bytes-boost-factor: 1
+  poll-timeout-ms: 150
+
+
+keycloak-admin:
+  realm: master
+  url: http://localhost:8080
+  username: admin
+  password: password
+  client-id: admin-cli
+
+management:
+  endpoints:
+    web:
+      exposure.include: beans, env, health, info, metrics, mappings
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  show-actuator: true
+  swagger-ui:
+    groups-order: DESC
+    disable-swagger-default-url: true
+
+jwt:
+  auth:
+    converter:
+      resource-id: uber-app
+      principal-attribute: preferred_username
+
+app:
+  cors:
+    allowed-origins: http://localhost:3000,*

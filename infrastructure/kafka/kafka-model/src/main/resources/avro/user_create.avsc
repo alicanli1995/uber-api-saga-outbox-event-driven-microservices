@@ -1,0 +1,39 @@
+{
+  "namespace": "com.uber.api.kafka.model",
+  "type": "record",
+  "name": "UserCreateRequest",
+  "fields": [
+    {
+      "name": "userMail",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "userType",
+      "type": {
+        "type": "enum",
+        "name": "UserType",
+        "symbols": ["DRIVER", "CUSTOMER"]
+      }
+    },
+    {
+      "name": "openingBalance",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 10,
+        "scale": 2
+      }
+    },
+    {
+      "name": "createdAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+
+  ]
+}

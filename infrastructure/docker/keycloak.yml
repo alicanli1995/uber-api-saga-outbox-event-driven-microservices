@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:5.7
+    volumes:
+      - "./volumes/mysql_data:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: keycloak
+      MYSQL_PASSWORD: password
+    networks:
+      - ${GLOBAL_NETWORK:-kafka}
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:18.0.0
+    environment:
+      DB_VENDOR: MYSQL
+      DB_ADDR: mysql
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_PASSWORD: password
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: password
+      KEYCLOAK_ADMIN_PASSWORD: password
+      KEYCLOAK_ADMIN: admin
+    ports:
+      - "8080:8080"
+    command:
+      - start-dev
+    depends_on:
+      - mysql
+    networks:
+      - ${GLOBAL_NETWORK:-kafka}

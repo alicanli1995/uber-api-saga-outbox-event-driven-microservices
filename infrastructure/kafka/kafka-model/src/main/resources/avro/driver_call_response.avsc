@@ -1,0 +1,59 @@
+{
+  "namespace": "com.uber.api.kafka.model",
+  "type": "record",
+  "name": "DriverCallResponseAvroModel",
+  "fields": [
+    {
+      "name": "id",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "sagaId",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "driverMail",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "pendingRequestId",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "createdAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "driverStatus",
+      "type": {
+        "type": "enum",
+        "name": "DriverStatus",
+        "symbols": ["AVAILABLE", "CALL", "UNAVAILABLE"]
+      }
+    },
+    {
+      "name": "failureMessages",
+      "type": {
+        "type": "array",
+        "items":{
+          "type":"string"
+        }
+      }
+    }
+  ]
+}

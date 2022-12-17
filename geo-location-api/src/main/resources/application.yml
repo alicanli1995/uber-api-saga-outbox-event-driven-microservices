@@ -1,0 +1,9 @@
+server:
+  port: 8090
+
+spring:
+  banner:
+    location: classpath:banner.txt
+  main:
+    allow-circular-references: true
+    allow-bean-definition-overriding: true
