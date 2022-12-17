@@ -50,6 +50,7 @@ public class Driver {
     private PendingRequest pendingRequest;
 
     @JsonProperty("driver_location")
+    @JoinColumn(nullable = false)
     @OneToOne(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
     private Location locations;
 

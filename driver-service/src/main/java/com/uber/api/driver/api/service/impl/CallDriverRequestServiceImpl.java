@@ -11,7 +11,6 @@ import com.uber.api.driver.api.messaging.kafka.publisher.UserCreatedMessagePubli
 import com.uber.api.driver.api.outbox.helper.DriverRequestOutboxHelper;
 import com.uber.api.driver.api.repository.DriverRepository;
 import com.uber.api.driver.api.service.CallDriverRequestService;
-import com.uber.api.kafka.model.UserType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -57,14 +56,10 @@ public class CallDriverRequestServiceImpl implements CallDriverRequestService {
 
     @Override
     public List<DriverListDTO> getDriver(String ipAddress, Double latitude, Double longitude, Double distance, String name) {
-        userCreatedMessagePublisher.publish(name,this::createUser, UserType.CUSTOMER);
         var driverByIpAddress = new ArrayList<>(driverApiHelper.findAllByIpAddress(ipAddress)
                 .stream()
                 .filter(driver -> driver.getDriverStatus().equals(DriverStatus.AVAILABLE))
-                .peek(driver -> {
-                    driverApiHelper.setLocation(driver, latitude, longitude, distance);
-                    driver.setPrice(BigDecimal.valueOf(distance * DRIVER_DEFAULT_PER_KM_PRICE));
-                })
+                .peek(driver -> driver.setPrice(BigDecimal.valueOf(distance * DRIVER_DEFAULT_PER_KM_PRICE)))
                 .toList());
         if(driverByIpAddress.isEmpty()){
             var nearList =  driverApiHelper.nearDriverList(latitude, longitude,distance).stream()
@@ -87,9 +82,6 @@ public class CallDriverRequestServiceImpl implements CallDriverRequestService {
         return driverByIpAddress.stream().distinct().toList();
     }
 
-    private void createUser(String s, String s1) {
-        log.info("User created with name: {} and type: {}", s, s1);
-    }
 
     @Override
     public void acceptCustomerCallRequest(String requestId) {
@@ -156,7 +148,6 @@ public class CallDriverRequestServiceImpl implements CallDriverRequestService {
                 .orElseThrow(() -> new RuntimeException("Driver not found for mail: " + driverCallRequestAvroModelToCallDriverDTO.getDriverEmail()));
         driver.setDriverStatus(DriverStatus.AVAILABLE);
         driver.setPendingRequest(null);
-        driver.setLocations(null);
         driverRepository.save(driver);
     }
 

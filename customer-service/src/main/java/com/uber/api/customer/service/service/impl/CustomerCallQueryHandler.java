@@ -8,7 +8,9 @@ import com.uber.api.customer.service.client.LocationApi;
 import com.uber.api.customer.service.dto.CustomerStatusDTO;
 import com.uber.api.customer.service.dto.DriverDTO;
 import com.uber.api.customer.service.entity.Customer;
+import com.uber.api.customer.service.messaging.kafka.publisher.UserCreatedMessagePublisher;
 import com.uber.api.customer.service.repository.CustomerRepository;
+import com.uber.api.kafka.model.UserType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,8 @@ public class CustomerCallQueryHandler {
     private final CustomerRepository customerRepository;
     private final DriverApiClient driverApiClient;
     private final LocationApi locationApi;
+
+    private final UserCreatedMessagePublisher userCreatedMessagePublisher;
 
 
     public CustomerStatusDTO getCustomerStatus(String mail, String name, String ip) {
@@ -55,6 +59,8 @@ public class CustomerCallQueryHandler {
                         .ipAddress(ip)
                         .locations(createLocation(ip))
                     .build());
+            userCreatedMessagePublisher.publish(mail,
+                    (s, s2) -> log.info("UserCreatedMessagePublisher sent to kafka for user email: {}", mail), UserType.CUSTOMER);
             return CustomerStatusDTO.builder()
                     .status(save.getCustomerStatus().toString())
                     .customerLocation(locationApi.getIpLocation(ip))
