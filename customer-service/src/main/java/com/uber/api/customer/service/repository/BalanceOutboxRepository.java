@@ -20,7 +20,4 @@ public interface BalanceOutboxRepository extends JpaRepository<BalanceOutboxEnti
 
     Optional<BalanceOutboxEntity> findBySagaId(UUID sagaId);
 
-    Optional<BalanceOutboxEntity> findByTypeAndSagaIdAndSagaStatus(String customerProcessingSaga,
-                                                                   UUID fromString,
-                                                                   SagaStatus processing);
 }

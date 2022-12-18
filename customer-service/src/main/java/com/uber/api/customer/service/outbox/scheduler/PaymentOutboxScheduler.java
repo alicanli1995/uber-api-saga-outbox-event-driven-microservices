@@ -49,20 +49,26 @@ public class PaymentOutboxScheduler implements OutboxScheduler {
                             .collect(Collectors.joining(",")));
             outboxMessageResponse.forEach(paymentOutboxMessage -> {
                 if (paymentOutboxMessage.getSagaStatus().equals(SagaStatus.PROCESSING)){
-                    paymentRequestMessagePublisher.publish(paymentOutboxMessage,
+                    paymentRequestMessagePublisher.
+                            publish(paymentOutboxMessage,
                             this::updateOutboxStatus);
                     updateOutboxAndSagaStatusForDriverRejected(paymentOutboxMessage);
+                }else {
+                    paymentRequestMessagePublisher.publish(paymentOutboxMessage,
+                            this::updateOutboxStatus);
                 }
-                paymentRequestMessagePublisher.publish(paymentOutboxMessage,this::updateOutboxStatus);
             });
         }
         log.info("Processing outbox message completed ! ");
     }
 
     private void updateOutboxAndSagaStatusForDriverRejected(TaxiPaymentOutboxMessage paymentOutboxMessage) {
-        paymentOutboxMessage.setOutboxStatus(OutboxStatus.COMPLETED);
-        paymentOutboxMessage.setCustomerStatus(CustomerStatus.AVAILABLE);
-        paymentOutboxMessage.setSagaStatus(SagaStatus.FAILED);
+        requestOutboxHelper.updateSagaAndOutboxStatusForBalanceOutboxMessage(paymentOutboxMessage.getId(),
+                OutboxStatus.COMPLETED,
+                SagaStatus.FAILED);
+        requestOutboxHelper.updateSagaAndOutboxStatusForDriverOutbox(paymentOutboxMessage.getSagaId(),
+                SagaStatus.FAILED,
+                OutboxStatus.COMPLETED);
     }
 
     private void updateOutboxStatus(TaxiPaymentOutboxMessage taxiPaymentOutboxMessage, OutboxStatus outboxStatus) {

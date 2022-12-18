@@ -35,7 +35,7 @@ public class PaymentServiceImpl implements PaymentService {
             log.info("Payment is valid and initialized");
             payment.setStatus(PaymentStatus.COMPLETED);
             subtractCreditEntry(payment,balance);
-            addPaymentToBalanceHistory(balance,payment);
+            addPaymentToBalanceHistory(balance,payment,TransactionType.DEBIT);
             return new PaymentCompletedEvent(payment, LocalDateTime.now(ZoneId.of("UTC")));
         }
         else {
@@ -50,7 +50,7 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentEvent validateAndCancelPayment(Payment payment, Balance creditEntry, List<String> failureMessage) {
         payment.validatePayment(failureMessage);
         addCreditEntry(payment,creditEntry);
-        addPaymentToBalanceHistory(creditEntry,payment);
+        addPaymentToBalanceHistory(creditEntry,payment,TransactionType.CREDIT);
 
         if (failureMessage.isEmpty()) {
             log.info("Payment is valid and cancelled");
@@ -69,13 +69,13 @@ public class PaymentServiceImpl implements PaymentService {
         creditEntry.setTotalCreditAmount(newBalance);
     }
 
-    private void addPaymentToBalanceHistory(Balance balance, Payment payment) {
+    private void addPaymentToBalanceHistory(Balance balance, Payment payment, TransactionType transactionType) {
         var newBalanceHistory = BalanceHistory.builder()
                 .balance(balance)
                 .email(payment.getCustomerMail())
                 .transactionAmount(payment.getPrice())
                 .transactionStatus(TransactionStatus.ACCEPTED)
-                .transactionType(TransactionType.DEBIT)
+                .transactionType(transactionType)
                 .transactionDate(ZonedDateTime.now(ZoneId.of("UTC")))
                 .build();
 

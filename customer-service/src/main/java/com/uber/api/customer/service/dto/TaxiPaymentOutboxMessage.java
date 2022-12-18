@@ -32,9 +32,6 @@ public class TaxiPaymentOutboxMessage {
     private SagaStatus sagaStatus;
 
     @Setter
-    private CustomerStatus customerStatus;
-
-    @Setter
     private OutboxStatus outboxStatus;
 
     private int version;
