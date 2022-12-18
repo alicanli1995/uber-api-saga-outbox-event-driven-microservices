@@ -70,7 +70,7 @@ public class DriverSaga {
         var sagaStatus = customerSagaHelper.customerStatusToSagaStatus(event.getPendingRequest().getCallStatus());
 
         driverApprovalOutboxRepository.save(driverOutboxHelper.getAndUpdateDriverApprovedOutboxMessage(
-                balanceOutboxEntityOptional, SagaStatus.FAILED ));
+                balanceOutboxEntityOptional, sagaStatus ));
 
         savePaymentOutboxMessage(callDataMapper
                         .orderCancelledEventToOrderPaymentEventPayload(event),

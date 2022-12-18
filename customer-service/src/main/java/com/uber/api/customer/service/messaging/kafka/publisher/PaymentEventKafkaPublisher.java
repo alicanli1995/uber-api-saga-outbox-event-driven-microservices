@@ -19,7 +19,7 @@ import java.util.function.BiConsumer;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TaxiCallPaymentEventKafkaPublisher implements PaymentRequestMessagePublisher {
+public class PaymentEventKafkaPublisher implements PaymentRequestMessagePublisher {
 
     private final KafkaProducer<String, PaymentRequestAvroModel> kafkaProducer;
     private final CustomerServiceConfigData customerServiceConfigData;

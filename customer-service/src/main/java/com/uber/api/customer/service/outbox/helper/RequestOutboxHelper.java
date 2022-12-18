@@ -86,4 +86,22 @@ public class RequestOutboxHelper {
                     pendingRequestRepository.save(pendingRequestEntity);
                 });
     }
+
+    public void updateSagaAndOutboxStatusForBalanceOutboxMessage(UUID sagaId, OutboxStatus completed, SagaStatus sagaStatus) {
+        balanceOutboxRepository.findBySagaId(sagaId)
+                .ifPresent(balanceOutboxEntity -> {
+                    balanceOutboxEntity.setOutboxStatus(completed);
+                    balanceOutboxEntity.setSagaStatus(sagaStatus);
+                    balanceOutboxRepository.save(balanceOutboxEntity);
+                });
+    }
+
+    public void updateSagaAndOutboxStatusForDriverOutbox(UUID sagaId, SagaStatus sagaStatus, OutboxStatus outboxStatus) {
+        driverApprovalOutboxRepository.findBySagaId(sagaId)
+                .ifPresent(driverApprovalOutbox -> {
+                    driverApprovalOutbox.setOutboxStatus(outboxStatus);
+                    driverApprovalOutbox.setSagaStatus(sagaStatus);
+                    driverApprovalOutboxRepository.save(driverApprovalOutbox);
+                });
+    }
 }
