@@ -63,12 +63,8 @@ public class PaymentOutboxScheduler implements OutboxScheduler {
     }
 
     private void updateOutboxAndSagaStatusForDriverRejected(TaxiPaymentOutboxMessage paymentOutboxMessage) {
-        requestOutboxHelper.updateSagaAndOutboxStatusForBalanceOutboxMessage(paymentOutboxMessage.getId(),
-                OutboxStatus.COMPLETED,
-                SagaStatus.FAILED);
-        requestOutboxHelper.updateSagaAndOutboxStatusForDriverOutbox(paymentOutboxMessage.getSagaId(),
-                SagaStatus.FAILED,
-                OutboxStatus.COMPLETED);
+        requestOutboxHelper.updateSagaAndOutboxStatusForBalanceOutboxMessage(paymentOutboxMessage.getId(),SagaStatus.FAILED);
+        requestOutboxHelper.updateSagaAndOutboxStatusForDriverOutbox(paymentOutboxMessage.getSagaId(), SagaStatus.FAILED);
     }
 
     private void updateOutboxStatus(TaxiPaymentOutboxMessage taxiPaymentOutboxMessage, OutboxStatus outboxStatus) {

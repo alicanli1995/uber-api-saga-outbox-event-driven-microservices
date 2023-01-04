@@ -60,15 +60,16 @@ public class GeoIPLocationServiceImpl implements GeoIPLocationService {
             location = String.format("%s, %s, %s", continent, country, cityResponse.getCity().getName());
             position.setCity(cityResponse.getCity().getName());
             position.setFullLocation(location);
-            position.setLatitude((cityResponse.getLocation() != null) ? cityResponse.getLocation().getLatitude() : 0);
-            position.setLongitude((cityResponse.getLocation() != null) ? cityResponse.getLocation().getLongitude() : 0);
+            position.setLatitude(Objects.nonNull(cityResponse.getLocation()) && (Objects.nonNull(cityResponse.getLocation().getLatitude())) ? cityResponse.getLocation().getLatitude() : 0);
+            position.setLongitude(Objects.nonNull(cityResponse.getLocation()) && (Objects.nonNull(cityResponse.getLocation().getLongitude())) ? cityResponse.getLocation().getLongitude() : 0);
             position.setIpAddress(ip);
         }
 
         return position;
     }
 
-    private String getDeviceDetails(String userAgent) {
+    @Override
+    public String getDeviceDetails(String userAgent) {
         StringBuilder deviceDetails = new StringBuilder();
 
         deviceDetails.append(UNKNOWN);

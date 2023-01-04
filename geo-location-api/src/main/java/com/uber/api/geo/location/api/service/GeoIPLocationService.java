@@ -8,6 +8,8 @@ import java.util.Map;
 public interface GeoIPLocationService {
     GeoIP getIpLocation(String ipAddress) ;
 
+    String getDeviceDetails(String userAgent);
+
     Map<String,Double[]> randomDriverLocationGenerator(double lat1, double lon1, Integer num);
 
     BigDecimal getDistance(double lat1, double lon1, double lat2, double lon2, Double height);
