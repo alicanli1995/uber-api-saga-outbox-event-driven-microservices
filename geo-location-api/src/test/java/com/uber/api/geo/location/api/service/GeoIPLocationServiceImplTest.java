@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import ua_parser.*;
 
 import java.io.IOException;
 
@@ -22,6 +21,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+
+import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -86,5 +88,33 @@ class GeoIPLocationServiceImplTest {
         assertThat(deviceDetails).isNotEmpty();
     }
 
+    @Test
+    void test_randomDriverLocationGenerator_whenParamsAreValid(){
 
+        var driverLocationGenerator = geoIPLocationService.randomDriverLocationGenerator(23.0, 23.0, 2);
+
+        assertThat(driverLocationGenerator).isNotNull();
+        assertThat(driverLocationGenerator.get("Location1")).isNotNull();
+        assertThat(Arrays.stream(driverLocationGenerator.get("Location1")).count()).isEqualTo(3);
+        assertThat(driverLocationGenerator.get("Location0")).isNotNull();
+        assertThat(Arrays.stream(driverLocationGenerator.get("Location0")).count()).isEqualTo(3);
+
+    }
+
+    @Test
+    void test_isNearby_whenParamsAreValid(){
+
+        var driverLocationGenerator = geoIPLocationService.isNearBy(23.0, 23.0, 23.0, 23.0);
+
+        assertThat(driverLocationGenerator).isTrue();
+    }
+
+    @Test
+    void test_getDistance_withDefaultRange_whenParamsAreValid(){
+
+        var driverLocationGenerator = geoIPLocationService.getDistance(23.0, 23.0, 23.0, 23.0);
+
+        assertThat(driverLocationGenerator).isNotNull();
+        assertThat(driverLocationGenerator).isEqualTo(new BigDecimal("400.00"));
+    }
 }

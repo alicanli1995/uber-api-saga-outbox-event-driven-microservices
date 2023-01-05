@@ -10,7 +10,7 @@ public class CONSTANTS {
 
     public static final String REPLACE_ID_REGEX = "$1";
 
-    public static final String LOCATION = "Location ";
+    public static final String LOCATION = "Location";
 
     public static final String COMMA_SEPARATOR = ",";
 }

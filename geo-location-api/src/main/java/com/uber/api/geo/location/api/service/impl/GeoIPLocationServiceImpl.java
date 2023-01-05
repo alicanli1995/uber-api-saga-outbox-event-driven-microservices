@@ -118,7 +118,7 @@ public class GeoIPLocationServiceImpl implements GeoIPLocationService {
                 .limit(num)
                 .forEach(i -> {
                     BigDecimal bd  = getDistance(lat1, lon1, latList.get(i), lonList.get(i), randomForHeightList.get(i));
-                    locationMap.put("Location " + i, new Double[]{latList.get(i), lonList.get(i),
+                    locationMap.put("Location" + i, new Double[]{latList.get(i), lonList.get(i),
                             bd.divide(BigDecimal.valueOf(1000), 2, RoundingMode.HALF_UP).doubleValue()});
                 });
 

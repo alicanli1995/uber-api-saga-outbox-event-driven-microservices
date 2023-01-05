@@ -38,7 +38,7 @@ public class GeoLocationApi {
                                   @RequestParam double lon1,
                                   @RequestParam double lat2,
                                   @RequestParam double lon2,
-                                  @RequestParam Double height) {
+                                  @RequestParam double height) {
         return geoIPLocationService.getDistance(lat1,lon1,lat2,lon2,height);
     }
 
@@ -59,8 +59,8 @@ public class GeoLocationApi {
     }
 
     @GetMapping("/nearby")
-    public boolean isNearBy(@RequestParam Double latitude,
-                            @RequestParam Double longitude,
+    public boolean isNearBy(@RequestParam double latitude,
+                            @RequestParam double longitude,
                             @RequestParam double latitude1,
                             @RequestParam double longitude1) {
         return geoIPLocationService.isNearBy(latitude,longitude,latitude1,longitude1);
