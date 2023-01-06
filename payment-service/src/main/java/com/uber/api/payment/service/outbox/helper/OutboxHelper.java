@@ -20,13 +20,8 @@ public class OutboxHelper {
     @Transactional
     public void updateOutboxMessage(CustomerOutboxMessage customerOutboxMessage, OutboxStatus outboxStatus) {
         customerOutboxMessage.setOutboxStatus(outboxStatus);
-        save(customerOutboxMessage);
+        paymentOutboxRepository.save(outboxDataHelper.toCustomerOutboxEntity(customerOutboxMessage));
         log.info("CustomerOutboxMessage with id {} updated with status {}", customerOutboxMessage.getId(), outboxStatus);
-    }
-
-    private void save(CustomerOutboxMessage customerOutboxMessage) {
-        var response = paymentOutboxRepository.save(outboxDataHelper.toCustomerOutboxEntity(customerOutboxMessage));
-        log.info("CustomerOutboxMessage with id {} saved with status {}", response.getId(), response.getOutboxStatus());
     }
 
     public CustomerOutboxMessage customerOutboxEntityToCustomerOutboxMessage(PaymentOutboxEntity paymentOutboxEntity) {
